@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  discord-bot:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: discord-github-bot
+    restart: unless-stopped
+    
+    # Environment variables (use .env file for local development)
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPO_OWNER=${GITHUB_REPO_OWNER}
+      - GITHUB_REPO_NAME=${GITHUB_REPO_NAME}
+      - DATABASE_PATH=/app/data/bot_data.db
+    
+    # Volume mounting for database persistence
+    volumes:
+      - bot_data:/app/data
+      # Uncomment the following line for development (live code reloading)
+      # - ./src:/app/src:ro
+    
+    # Health check configuration
+    healthcheck:
+      test: ["CMD", "python", "-c", "from src.db.database import health_check; exit(0 if health_check() else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Resource limits (adjust as needed)
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: Add a PostgreSQL database for production use
+  # Uncomment if you want to use PostgreSQL instead of SQLite
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: discord-bot-db
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: discord_bot
+  #     POSTGRES_USER: botuser
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U botuser -d discord_bot"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+volumes:
+  bot_data:
+    driver: local
+  # postgres_data:
+  #   driver: local
