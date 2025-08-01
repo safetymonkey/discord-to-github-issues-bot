@@ -2,7 +2,7 @@ import pytest
 import asyncio
 import tempfile
 import os
-from unittest.mock import Mock, patch, AsyncMock, Mock
+from unittest.mock import Mock, patch, AsyncMock
 from src.db.database import setup_database, save_issue_link, get_issue_link, health_check
 
 
