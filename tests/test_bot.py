@@ -80,8 +80,20 @@ class TestDatabase:
         assert health_check() is True
 
 
+import importlib
+
+
 class TestBotCommands:
     """Test cases for Discord bot commands."""
+
+    @pytest.fixture(autouse=True)
+    def mock_env_vars(self, monkeypatch):
+        """Mock environment variables for bot command tests."""
+        monkeypatch.setenv("DISCORD_TOKEN", "test_token")
+        monkeypatch.setenv("GITHUB_TOKEN", "test_token")
+        monkeypatch.setenv("GITHUB_REPO_OWNER", "test_owner")
+        monkeypatch.setenv("GITHUB_REPO_NAME", "test_repo")
+        monkeypatch.setattr("github.Github", Mock())
     
     @pytest.fixture
     def mock_interaction(self):
@@ -133,12 +145,12 @@ class TestBotCommands:
             # Import and test the command function
             from src.bot import create_issue
             
-            await create_issue(
-                interaction=mock_interaction,
-                message_id="987654321",
-                title="Test Issue",
-                labels="bug,feature",
-                assignees="user1,user2"
+            await create_issue.callback(
+                mock_interaction,
+                "987654321",
+                "Test Issue",
+                "bug,feature",
+                "user1,user2"
             )
             
             # Verify interactions
@@ -157,10 +169,10 @@ class TestBotCommands:
             
             from src.bot import create_issue
             
-            await create_issue(
-                interaction=mock_interaction,
-                message_id="invalid",
-                title="Test Issue"
+            await create_issue.callback(
+                mock_interaction,
+                "invalid",
+                "Test Issue"
             )
             
             # Verify error handling
@@ -179,6 +191,8 @@ class TestContainerFeatures:
         custom_path = "/custom/path/test.db"
         
         with patch.dict(os.environ, {'DATABASE_PATH': custom_path}):
+            import src.db.database
+            importlib.reload(src.db.database)
             from src.db.database import get_database_path
             
             # Mock the directory creation to avoid filesystem operations
